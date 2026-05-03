@@ -9,10 +9,17 @@ venv/
 *.db
 *.db-journal
 
-# OTDR Traces (Real Data)
+# OTDR Traces and Plans (Proprietary Data)
 TRAZAS/
+PLANOS/
 *.sor
+*.dwg
 *.png
+
+# Temporary analysis files
+*.txt
+strings.py
+extract_plano_data.py
 
 # Logs
 *.log
