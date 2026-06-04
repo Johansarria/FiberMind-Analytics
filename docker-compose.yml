@@ -1,0 +1,127 @@
+# ─────────────────────────────────────────────
+# FiberMind Analytics - Docker Compose
+# ─────────────────────────────────────────────
+# Commands:
+#   Start all:      docker compose up -d
+#   Just the API:   docker compose up -d fibermind
+#   With Ollama:    docker compose --profile ai up -d
+#   With Dashboard: docker compose --profile dashboard up -d
+#   Full stack:     docker compose --profile all up -d
+# ─────────────────────────────────────────────
+
+services:
+
+  # ─── PostgreSQL ───
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: fibermind
+      POSTGRES_USER: fibermind
+      POSTGRES_PASSWORD: fibermind_secret
+      POSTGRES_INITDB_ARGS: "--auth=trust"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/setup_db.py:/docker-entrypoint-initdb.d/setup_db.py:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fibermind"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "5432:5432"
+    profiles: ["all"]
+
+  # ─── Ollama (IA Local) ───
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_HOST: "0.0.0.0"
+    ports:
+      - "11435:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    profiles: ["ai", "all"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ─── FiberMind - API REST ───
+  fibermind:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: full
+    environment:
+      DB_PATH: /data/ftth_mantenimiento.db
+      OLLAMA_URL: http://ollama:11434/api/generate
+      OLLAMA_MODEL: qwen2.5-coder:1.5b
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_AUTHORIZED_CHAT_ID: ${TELEGRAM_AUTHORIZED_CHAT_ID:-0}
+      FIBERMIND_MODE: production
+    ports:
+      - "8000:8000"
+    volumes:
+      - fibermind_data:/data
+    command: >
+      sh -c "python scripts/setup_db.py /data/ftth_mantenimiento.db
+      && uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+    profiles: ["all"]
+
+  # ─── FiberMind - Telegram Bot ───
+  fibermind-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      DB_PATH: /data/ftth_mantenimiento.db
+      OLLAMA_URL: http://ollama:11434/api/generate
+      OLLAMA_MODEL: qwen2.5-coder:1.5b
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN required}
+      TELEGRAM_AUTHORIZED_CHAT_ID: ${TELEGRAM_AUTHORIZED_CHAT_ID:?TELEGRAM_AUTHORIZED_CHAT_ID required}
+    volumes:
+      - fibermind_data:/data
+    command: >
+      sh -c "python scripts/setup_db.py /data/ftth_mantenimiento.db
+      && python -m src.infrastructure.telegram.bot"
+    profiles: ["ai", "all"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  # ─── FiberMind - Dashboard ───
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: full
+    environment:
+      DB_PATH: /data/ftth_mantenimiento.db
+      OLLAMA_URL: http://ollama:11434/api/generate
+      OLLAMA_MODEL: qwen2.5-coder:1.5b
+    ports:
+      - "8501:8501"
+    volumes:
+      - fibermind_data:/data
+    command: >
+      sh -c "python scripts/setup_db.py /data/ftth_mantenimiento.db
+      && streamlit run src/dashboard/app.py --server.port=8501 --server.address=0.0.0.0"
+    profiles: ["dashboard", "all"]
+
+volumes:
+  pgdata:
+  ollama_data:
+  fibermind_data:

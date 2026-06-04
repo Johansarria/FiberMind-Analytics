@@ -1,87 +1,160 @@
-# FiberMind Analytics 🤖📊
+# FiberMind Analytics 🔬📡
 
-Un sistema inteligente, autónomo y privado diseñado para transformar datos crudos de hardware en diagnósticos accionables utilizando **Modelos de Lenguaje Locales (LLMs)**. 
-
-Este proyecto implementa una arquitectura **Text-to-SQL** y análisis de datos en lenguaje natural para optimizar las operaciones de mantenimiento preventivo (O&M). Basado en los principios de **Clean Architecture**, el sistema separa el dominio, la infraestructura y los servicios para garantizar mantenibilidad y escalabilidad.
+Plataforma de analítica e inteligencia artificial para inspección y mantenimiento de infraestructura **FTTH** (Fiber To The Home). Decodifica trazas OTDR, detecta fallas críticas automáticamente y permite consultas en lenguaje natural vía IA local.
 
 ---
 
-## 🌟 Características Principales
+## 🎯 Para quién es
 
-### 1. Motor Analítico Asistido por LLM (Soberanía de Datos)
-- **Razonamiento Local (Costo $0):** Impulsado por **Ollama** (`qwen2.5-coder:1.5b`), garantizando que los datos de infraestructura nunca salgan hacia APIs de terceros.
-- **Text-to-SQL Dinámico:** Traducción de intenciones operativas complejas a consultas SQL precisas.
-- **Análisis de Fallas (Fault Analysis):** Cruce de atenuaciones y distancias para diagnósticos técnicos.
-
-### 2. Arquitectura de Software (AGENTES.md Compliant)
-- **Modularidad Total:** Capas de Dominio, Infraestructura y Aplicación claramente separadas.
-- **Patrón Repository:** Centralización del acceso a datos en SQLite.
-- **Tipado Fuerte:** Implementación extensiva de Type Hints en Python para robustez.
-
-### 3. Interfaz Agéntica Multicanal
-- **Telegram Bot:** Interacción fluida para técnicos de campo (Auditoría, Radiografía de Hilos).
-- **Servidor MCP:** Herramientas de diagnóstico integradas para ecosistemas de Agentes IA.
-- **Visualización:** Generación automatizada de trazas OTDR estimadas mediante `matplotlib`.
+- **ISPs y operadores FTTH** que quieren automatizar el análisis de trazas OTDR
+- **Técnicos en campo** que necesitan diagnósticos rápidos desde su celular
+- **NOCs** que requieren integración REST con dashboards existentes
 
 ---
 
-## 📂 Estructura del Proyecto
+## ✨ Capacidades
 
-```text
-C:\MLpractica3\
+| Característica | Descripción |
+|:--|:--|
+| 📡 **Decodificación OTDR** | Analiza archivos .sor y extrae eventos ópticos |
+| ⚠️ **Detección de Fallas** | Identifica empalmes, curvaturas y splits con pérdida crítica |
+| 📊 **Visualización** | Trazas estimadas de potencia óptica con umbrales |
+| 🤖 **IA Local (Text-to-SQL)** | Consulta la red en lenguaje natural vía Ollama (privacidad total) |
+| 🗺️ **Inventario Geográfico** | Localiza empalmes, CTOs y mufas en planos |
+| 🤖 **Bot de Telegram** | Técnicos consultan desde el celular |
+| 🔌 **API REST** | Integración con cualquier dashboard o NOC |
+| 🔌 **Servidor MCP** | Integración con asistentes IA (Claude, Cursor, etc.) |
+| 🐳 **Docker** | Despliegue en 1 comando |
+
+---
+
+## 📂 Estructura
+
+```
+fibermind-analytics/
 ├── src/
-│   ├── core/                # Lógica pura y reglas de negocio
-│   │   ├── domain/          # Entidades (OTDREvent, InventoryElement)
-│   │   └── services/        # Casos de uso (AI Service, Network Service)
-│   ├── infrastructure/      # Implementaciones de servicios externos
-│   │   ├── database/        # Repositorio SQLite
-│   │   ├── ai/              # Clientes de IA (Ollama)
-│   │   ├── telegram/        # Lógica del Bot de Telegram
-│   │   └── mcp/             # Servidor de herramientas MCP
-│   ├── utils/               # Plotting, Strings, Utilidades comunes
-│   └── config/              # Prompts y configuraciones del sistema
-├── scripts/                 # Ingesta ETL, Setup y Diagnóstico
-├── tests/                   # Suite de pruebas unitarias
-├── data/                    # Almacenamiento de DB y trazas raw
-└── .env                     # Configuración de credenciales y rutas
+│   ├── core/domain/          # Modelos de dominio (OTDREvent, InventoryElement)
+│   │   services/             # Lógica de negocio (AI, Network)
+│   ├── infrastructure/
+│   │   ├── database/         # Repositorio SQLite
+│   │   ├── ai/               # Cliente Ollama
+│   │   ├── telegram/         # Bot de Telegram
+│   │   └── mcp/              # Servidor MCP
+│   ├── api/                  # API REST (FastAPI)
+│   ├── dashboard/            # Dashboard web (Streamlit)
+│   ├── config/               # Prompts y configuración
+│   └── utils/                # Plotting y utilidades
+├── scripts/                  # ETL, setup, diagnóstico
+├── tests/                    # Pruebas unitarias
+├── pyproject.toml            # Paquete Python
+├── Dockerfile                # Imagen Docker
+├── docker-compose.yml        # Stack completo
+└── AGENTES.md                # Guía para asistentes IA
 ```
 
 ---
 
-## 🚀 Instalación y Despliegue
+## 🚀 Inicio Rápido
 
-### 1. Preparar Entorno
-```powershell
-python -m venv venv
-.\venv\Scripts\activate
-pip install pyotdr python-telegram-bot matplotlib requests mcp python-dotenv
-```
+### Opción 1: Docker (Recomendado)
 
-### 2. Configurar IA Local
 ```bash
-ollama run qwen2.5-coder:1.5b
+# Clonar
+git clone https://github.com/Johansarria/FiberMind-Analytics.git
+cd FiberMind-Analytics
+
+# Copiar configuración
+cp .env.example .env
+# Edita TELEGRAM_BOT_TOKEN si quieres el bot
+
+# Iniciar todo el stack
+docker compose --profile all up -d
 ```
 
-### 3. Ejecución
-1. Configura el archivo `.env` con tus tokens y rutas.
-2. Inicia el bot de Telegram:
-   ```bash
-   python -m src.infrastructure.telegram.bot
-   ```
-3. O inicia el servidor MCP:
-   ```bash
-   python -m src.infrastructure.mcp.server
-   ```
+Servicios:
+| Puerto | Servicio | URL |
+|:--|:--|:--|
+| 8000 | API REST | http://localhost:8000/docs |
+| 8501 | Dashboard | http://localhost:8501 |
+| 11435 | Ollama | http://localhost:11435 |
+| 5432 | PostgreSQL | localhost:5432 |
+
+### Opción 2: Local (Desarrollo)
+
+```bash
+# Instalar
+python3 -m venv venv && source venv/bin/activate
+pip install -e .
+pip install -e ".[web,dashboard]"
+
+# Configurar
+cp .env.example .env
+
+# Iniciar base de datos
+python scripts/setup_db.py
+
+# API REST
+uvicorn src.api.main:app --reload --port 8000
+
+# Dashboard
+streamlit run src/dashboard/app.py
+
+# Bot de Telegram (requiere token)
+python -m src.infrastructure.telegram.bot
+
+# Servidor MCP
+python -m src.infrastructure.mcp.server
+```
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
-- **Python 3.10+** (Core)
-- **SQLite** (Data Warehouse)
-- **Ollama** (LLM Engine)
-- **FastMCP** (Integración de Herramientas)
-- **Python Telegram Bot** (Interfaz)
-- **Matplotlib** (Visualización)
+## 🔌 API REST
+
+| Método | Endpoint | Descripción |
+|:--|:--|:--|
+| GET | `/health` | Health check |
+| GET | `/traces/{id_cable}/{id_hilo}` | Eventos OTDR de un hilo |
+| GET | `/traces/{id_cable}/{id_hilo}/plot` | Gráfico de traza OTDR |
+| POST | `/audit` | Auditoría de empalmes críticos |
+| GET | `/infrastructure` | Listar infraestructura |
+| GET | `/infrastructure/search?q=` | Buscar elemento geográfico |
+| POST | `/query` | Consulta en lenguaje natural (requiere Ollama) |
+| GET | `/stats` | Estadísticas de la red |
+
+Documentación interactiva: http://localhost:8000/docs
 
 ---
-*Optimizado bajo los estándares de **FiberMind Analytics** para la excelencia en O&M.*
+
+## 🤖 Bot de Telegram
+
+```
+/start        → Info y bienvenida
+/auditar      → Auditoría de empalmes críticos
+/hilo <c> <h> → Radiografía de un hilo específico
+```
+
+Configura en `.env`:
+```
+TELEGRAM_BOT_TOKEN=tu_token
+TELEGRAM_AUTHORIZED_CHAT_ID=tu_chat_id
+```
+
+---
+
+## 🛠️ Stack Tecnológico
+
+- **Python 3.12+** · FastAPI · Streamlit · Pydantic
+- **SQLite** (dev) / **PostgreSQL** (prod)
+- **Ollama** (qwen2.5-coder:1.5b) · **MCP Protocol**
+- **python-telegram-bot** · **matplotlib**
+- **Docker** · **Docker Compose**
+
+---
+
+## 📄 Licencia
+
+MIT © 2026 Johan Sarria
+
+---
+
+> 🔬 *De técnicos para técnicos — análisis FTTH con privacidad e inteligencia local.*
