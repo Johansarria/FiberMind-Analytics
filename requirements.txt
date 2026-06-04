@@ -28,8 +28,11 @@ numpy>=1.26.0
 # uvicorn[standard]>=0.32.0
 # pydantic>=2.0.0
 
-# Optional: Dashboard
-# streamlit>=1.40.0
+# Dashboard
+streamlit>=1.40.0
+plotly>=6.0.0
+pandas>=2.0.0
+openpyxl>=3.1.0
 
 # Optional: Dev
 # pytest>=8.0
