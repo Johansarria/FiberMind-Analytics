@@ -1,0 +1,75 @@
+# ─────────────────────────────────────────────
+# FiberMind Analytics - Configuración Multi-ISP
+# ─────────────────────────────────────────────
+# Define ISPs, bases de datos, modelos IA y bots.
+# Copia a fibermind.yml y edita los valores.
+# ─────────────────────────────────────────────
+
+# Valores globales aplicados a TODOS los ISPs (cada ISP puede sobrescribirlos)
+globals:
+  ollama:
+    url: "http://ollama:11434/api/generate"
+    model: "qwen2.5-coder:1.5b"
+  location:
+    timezone: "America/Bogota"
+
+# ISP por defecto (se usa cuando no se especifica X-ISP-ID)
+default_isp: chiminangos
+
+# ─── ISPs ───
+isps:
+  chiminangos:
+    name: "Red Chiminangos"
+    db:
+      path: /data/chiminangos/ftth.db
+    ollama:
+      url: "http://ollama:11434/api/generate"
+      model: "qwen2.5-coder:1.5b"
+    telegram:
+      token: ""
+    location:
+      city: "Cali"
+      lat: 3.4516
+      lon: -76.5320
+
+  bellavista:
+    name: "Red Bellavista"
+    db:
+      path: /data/bellavista/ftth.db
+    ollama:
+      url: "http://ollama:11434/api/generate"
+      model: "qwen2.5-coder:1.5b"
+    telegram:
+      token: ""
+    location:
+      city: "Cali"
+      lat: 3.4720
+      lon: -76.5240
+
+  # Ejemplo: ISP remoto con su propio Ollama
+  # medellin:
+  #   name: "Red Medellín Norte"
+  #   db:
+  #     path: /data/medellin/ftth.db
+  #   ollama:
+  #     url: "http://192.168.1.100:11434/api/generate"
+  #     model: "llama3.2:3b"
+  #   location:
+  #     city: "Medellín"
+  #     lat: 6.2476
+  #     lon: -75.5658
+
+  # Ejemplo: ISP con PostgreSQL
+  # bogota:
+  #   name: "Red Bogotá Corporativo"
+  #   db:
+  #     path: "postgresql://user:pass@db-bogota:5432/fibermind"
+  #   ollama:
+  #     url: "http://ollama-02:11434/api/generate"
+  #     model: "qwen2.5-coder:7b"
+  #   telegram:
+  #     token: "123456:ABC-DEF..."
+  #   location:
+  #     city: "Bogotá"
+  #     lat: 4.7110
+  #     lon: -74.0721

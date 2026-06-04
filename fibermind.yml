@@ -1,0 +1,27 @@
+globals:
+  ollama:
+    url: "http://localhost:11434/api/generate"
+    model: "qwen2.5-coder:1.5b"
+  location:
+    timezone: "America/Bogota"
+
+default_isp: chiminangos
+
+isps:
+  chiminangos:
+    name: "Red Chiminangos"
+    db:
+      path: /opt/data/fibermind-product/ftth_mantenimiento.db
+    location:
+      city: "Cali"
+      lat: 3.4516
+      lon: -76.5320
+
+  bellavista:
+    name: "Red Bellavista"
+    db:
+      path: /opt/data/bellavista/ftth.db
+    location:
+      city: "Cali"
+      lat: 3.4720
+      lon: -76.5240

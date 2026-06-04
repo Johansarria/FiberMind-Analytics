@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────
-# FiberMind Analytics - Dashboard Web
-# Streamlit para visualización y consultas
+# FiberMind Analytics - Dashboard Web (Multi-ISP)
+# Streamlit con selector de ISP en sidebar
 # ─────────────────────────────────────────────
 
 import os
@@ -10,93 +10,145 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.infrastructure.database.repository import FTTHRepository
-from src.core.services.network_service import NetworkService
+from src.config.isp_config import get_config, reload_config
 from src.utils.plotting import generate_plot
 
 # ─── Config ───
-DB_PATH = os.getenv("DB_PATH", "ftth_mantenimiento.db")
+FIBERMIND_CONFIG = os.getenv("FIBERMIND_CONFIG", "")
+
 st.set_page_config(page_title="FiberMind Analytics", page_icon="🔬", layout="wide")
 
-# ─── Inicialización ───
-@st.cache_resource
-def load_services():
-    repo = FTTHRepository(DB_PATH)
-    ns = NetworkService(repo)
-    return repo, ns
 
-repo, network_service = load_services()
+# ─── Carga de ISP ───
+@st.cache_resource
+def load_config():
+    return get_config(FIBERMIND_CONFIG)
+
+config = load_config()
+
+
+def get_isp_services(isp_id: str):
+    """Retorna repo y network_service para el ISP seleccionado."""
+    repo = config.get_repo(isp_id)
+    ns = config.get_network_service(isp_id)
+    return repo, ns
 
 
 # ─── Sidebar ───
 st.sidebar.markdown("""
 <div style='text-align: center; margin-bottom: 20px;'>
-    <h1 style='font-size: 2.5rem;'>🔬</h1>
+    <h1 style='font-size: 2.5rem; margin: 0;'>🔬</h1>
     <h2 style='margin: 0;'>FiberMind</h2>
-    <p style='color: #888; font-size: 0.9rem;'>Analytics</p>
+    <p style='color: #888; font-size: 0.9rem; margin: 0;'>Analytics</p>
 </div>
 """, unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
+
+# ─── Selector de ISP ───
+available_isps = config.get_available_isps()
+if available_isps:
+    isp_options = {isp_id: f"{config.get_isp(isp_id).name} ({isp_id})" for isp_id in available_isps}
+    default_idx = list(available_isps).index(config.default_isp) if config.default_isp in available_isps else 0
+    selected_isp = st.sidebar.selectbox(
+        "🌐 ISP / Cliente",
+        options=list(isp_options.keys()),
+        format_func=lambda x: isp_options[x],
+        index=default_idx,
+        key="isp_selector",
+    )
+
+    # Mostrar info del ISP
+    isp_info = config.get_isp(selected_isp)
+    st.sidebar.markdown(f"""
+    **{isp_info.name}**  
+    🏙️ {isp_info.city or '—'}  
+    🤖 {isp_info.ollama_model}  
+    📍 `{isp_info.db_path}`
+    """)
+else:
+    selected_isp = "default"
+    st.sidebar.warning("No hay ISPs configurados.")
+
+st.sidebar.markdown("---")
 mode = st.sidebar.radio("Modo", ["Dashboard", "Consultas", "Auditoría", "Infraestructura", "Acerca de"])
+
+# Recargar servicios si cambia el ISP
+repo, network_service = get_isp_services(selected_isp)
 
 
 # ─── Dashboard ───
 if mode == "Dashboard":
-    st.title("📊 Dashboard General")
+    st.title(f"📊 {isp_info.name}")
 
     # Stats cards
     col1, col2, col3, col4 = st.columns(4)
 
     try:
         results, _ = repo.execute_custom_query("SELECT COUNT(*) as total FROM eventos_otdr")
-        total_events = results[0]['total']
+        total_events = results[0]['total'] if results else 0
+    except:
+        total_events = 0
 
+    try:
         hilos, _ = repo.execute_custom_query("SELECT COUNT(DISTINCT id_hilo) as total FROM eventos_otdr")
-        total_hilos = hilos[0]['total']
+        total_hilos = hilos[0]['total'] if hilos else 0
+    except:
+        total_hilos = 0
 
+    try:
         criticos, _ = repo.execute_custom_query("SELECT COUNT(*) as total FROM eventos_otdr WHERE atenuacion_db > 0.5")
-        total_criticos = criticos[0]['total']
+        total_criticos = criticos[0]['total'] if criticos else 0
+    except:
+        total_criticos = 0
 
+    try:
         cables, _ = repo.execute_custom_query("SELECT COUNT(DISTINCT id_cable) as total FROM eventos_otdr")
-        total_cables = cables[0]['total']
-    except Exception:
-        total_events = total_hilos = total_criticos = total_cables = 0
+        total_cables = cables[0]['total'] if cables else 0
+    except:
+        total_cables = 0
 
     col1.metric("📡 Eventos OTDR", total_events)
     col2.metric("🔌 Hilos monitoreados", total_hilos)
-    col3.metric("⚠️ Críticos", total_criticos, delta=f"{total_criticos} alertas" if total_criticos > 0 else "0")
+    col3.metric("⚠️ Críticos", total_criticos,
+                delta=f"{total_criticos} alertas" if total_criticos > 0 else "0")
     col4.metric("📦 Cables", total_cables)
 
-    # Tabla de eventos por tipo
-    st.subheader("📋 Eventos por Tipo")
-    try:
-        tipos, cols = repo.execute_custom_query(
-            "SELECT tipo_evento, COUNT(*) as count FROM eventos_otdr GROUP BY tipo_evento ORDER BY count DESC"
-        )
-        df = pd.DataFrame(tipos)
-        st.dataframe(df, use_container_width=True, hide_index=True)
-    except Exception as e:
-        st.error(f"Error cargando datos: {e}")
+    if total_events > 0:
+        # Tabla de eventos por tipo
+        st.subheader("📋 Eventos por Tipo")
+        try:
+            tipos, cols = repo.execute_custom_query(
+                "SELECT tipo_evento, COUNT(*) as count FROM eventos_otdr GROUP BY tipo_evento ORDER BY count DESC"
+            )
+            df = pd.DataFrame(tipos)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        except Exception as e:
+            st.error(f"Error cargando datos: {e}")
 
-    # Últimas trazas
-    st.subheader("🕐 Últimas Trazas")
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("📊 Ver Hilo Normal (C8 H285)"):
-            img = generate_plot(8, 285, "/tmp/fibermind_dash.png", repo)
-            if img:
-                st.image(img, caption="Traza OTDR - Cable 8, Hilo 285 (Ruta Normal)")
-    with col_b:
-        if st.button("⚠️ Ver Hilo Crítico (C8 H102)"):
-            img = generate_plot(8, 102, "/tmp/fibermind_dash_crit.png", repo)
-            if img:
-                st.image(img, caption="Traza OTDR - Cable 8, Hilo 102 (Falla Crítica)")
+        # Últimas trazas
+        st.subheader("🕐 Últimas Trazas")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button("📊 Ver Traza Normal"):
+                img = generate_plot(8, 285, "/tmp/fibermind_dash.png", repo)
+                if img:
+                    st.image(img, caption="Traza OTDR — Ruta Normal")
+        with col_b:
+            if st.button("⚠️ Ver Traza Crítica"):
+                img = generate_plot(8, 102, "/tmp/fibermind_dash_crit.png", repo)
+                if img:
+                    st.image(img, caption="Traza OTDR — Falla Crítica")
+    else:
+        st.info("📭 No hay datos para este ISP aún. Corre `python scripts/setup_db.py` para cargar datos de prueba.")
+        if isp_info.city:
+            st.markdown(f"📍 **{isp_info.name}** — {isp_info.city}")
+            st.markdown(f"📁 DB: `{isp_info.db_path}`")
 
 
 # ─── Consultas ───
 elif mode == "Consultas":
-    st.title("🔍 Consulta de Hilos")
+    st.title(f"🔍 Consulta de Hilos — {isp_info.name}")
     st.markdown("Consulta eventos OTDR por cable e hilo.")
 
     col1, col2 = st.columns(2)
@@ -113,22 +165,22 @@ elif mode == "Consultas":
             else:
                 st.success(f"✅ {len(eventos)} eventos encontrados")
                 data = [
-                    {"Distancia (km)": e.distancia_km, "Tipo Evento": e.tipo_evento, "Atenuación (dB)": e.atenuacion_db}
+                    {"Distancia (km)": e.distancia_km, "Tipo Evento": e.tipo_evento,
+                     "Atenuación (dB)": e.atenuacion_db}
                     for e in eventos
                 ]
                 st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
 
-                # Plot
                 img = generate_plot(id_cable, id_hilo, "/tmp/fibermind_query.png", repo)
                 if img:
-                    st.image(img, caption=f"Traza OTDR - Cable {id_cable}, Hilo {id_hilo}")
+                    st.image(img, caption=f"Traza OTDR — Cable {id_cable}, Hilo {id_hilo}")
         except Exception as e:
             st.error(f"Error: {e}")
 
 
 # ─── Auditoría ───
 elif mode == "Auditoría":
-    st.title("⚠️ Auditoría de Empalmes Críticos")
+    st.title(f"⚠️ Auditoría de Empalmes Críticos — {isp_info.name}")
     st.markdown("Detecta empalmes y curvaturas que superan el umbral de pérdida permitido.")
 
     col1, col2 = st.columns(2)
@@ -149,8 +201,7 @@ elif mode == "Auditoría":
 
 # ─── Infraestructura ───
 elif mode == "Infraestructura":
-    st.title("📍 Infraestructura Geográfica")
-    st.markdown("Elementos registrados en los planos de red.")
+    st.title(f"📍 Infraestructura Geográfica — {isp_info.name}")
 
     try:
         results, cols = repo.execute_custom_query(
@@ -160,7 +211,6 @@ elif mode == "Infraestructura":
             df = pd.DataFrame(results)
             st.dataframe(df, use_container_width=True, hide_index=True)
 
-            # Búsqueda
             search = st.text_input("🔍 Buscar elemento", placeholder="Ej: EMPALME 3")
             if search:
                 resultado = network_service.locate_element(search)
@@ -174,25 +224,34 @@ elif mode == "Infraestructura":
 # ─── Acerca de ───
 elif mode == "Acerca de":
     st.title("🔬 FiberMind Analytics")
-    st.markdown("""
-    **Versión:** 0.2.0  
-    **Propósito:** Plataforma de analítica e inteligencia artificial para infraestructura FTTH  
 
-    ### Capacidades
-    - 📡 Inspección y decodificación de trazas OTDR
-    - ⚠️ Detección automática de fallas críticas en empalmes
-    - 📊 Visualización gráfica de potencia óptica
-    - 🔍 Consultas en lenguaje natural vía IA local
-    - 🗺️ Localización geográfica de infraestructura
-    - 🤖 Bot de Telegram para técnicos en campo
-    - 🔌 Servidor MCP para integración con asistentes IA
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.markdown(f"""
+        **Versión:** 0.3.0  
+        **ISP activo:** {isp_info.name}  
+        **Ciudad:** {isp_info.city or '—'}  
+        **Base de datos:** `{isp_info.db_path}`  
+        **Modelo IA:** {isp_info.ollama_model}  
 
-    ### Tech Stack
-    Python • SQLite/PostgreSQL • Ollama • MCP • FastAPI • Streamlit • Telegram Bot
-
-    ### Licencia
-    MIT © {year} Johan Sarria
-    """.replace("{year}", "2026"))
+        ### Capacidades
+        - 📡 Inspección y decodificación de trazas OTDR
+        - ⚠️ Detección automática de fallas críticas
+        - 📊 Visualización gráfica de potencia óptica
+        - 🔍 Consultas en lenguaje natural vía IA local
+        - 🗺️ Localización geográfica de infraestructura
+        - 🤖 Bot de Telegram para técnicos en campo
+        - 🔌 Servidor MCP para integración con asistentes IA
+        - 🌐 **Multi-ISP:** Un solo servidor, múltiples clientes
+        """)
+    with col2:
+        isps = config.list_isps()
+        if isps:
+            st.markdown("### 🌐 ISPs Configurados")
+            for isp in isps:
+                icon = "✅" if isp["db_exists"] else "❌"
+                city = config.get_isp(isp["id"]).city
+                st.markdown(f"{icon} **{isp['name']}** ({isp['id']}) — {city or '—'}")
 
     st.markdown("---")
-    st.markdown("💡 *Listo para producción — despliega con `docker compose up -d`*")
+    st.markdown("💡 *Despliega con `docker compose --profile all up -d`*")
