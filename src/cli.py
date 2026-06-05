@@ -63,6 +63,7 @@ def cmd_check(args):
         isp = config.get_isp(isp_id)
         repo_ok = db_ok = False
         event_count = 0
+        db_error = ""
         try:
             repo = config.get_repo(isp.id)
             results, _ = repo.execute_custom_query("SELECT COUNT(*) as total FROM eventos_otdr")
@@ -70,12 +71,12 @@ def cmd_check(args):
             repo_ok = True
             db_ok = True
         except Exception as e:
-            db_ok = str(e)
+            db_error = str(e)
 
         status_icon = "✅" if repo_ok else "❌"
         print(f"   {status_icon} {isp.name} ({isp.id})")
         print(f"       DB:     {isp.db_path}")
-        print(f"       State:  {'✓ conectada' if repo_ok else '✗ '+str(db_ok)}")
+        print(f"       State:  {'✓ conectada' if repo_ok else '✗ ' + db_error}")
         print(f"       Events: {event_count}")
         print()
 

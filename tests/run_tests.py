@@ -1,27 +1,15 @@
-import asyncio
-from ai_engine import ask_ai
+#!/usr/bin/env python3
+"""Runner para tests FiberMind — ejecuta pytest con cobertura."""
+import sys
+import subprocess
+import os
 
-async def run_documentation_tests():
-    print("--- INICIANDO PRUEBAS DE SISTEMA FIBERMIND v1.0 ---")
-    
-    test_questions = [
-        "¿Cuántos registros de eventos tenemos en total?",
-        "¿Qué hilos del CA01 tienen fallas críticas (>0.5 dB)?",
-        "¿Dónde está el EMPALME 5 según los planos?",
-        "Para el hilo 144, ¿cuál es la potencia estimada de llegada si salimos con +3 dBm?"
-    ]
-    
-    results = []
-    for q in test_questions:
-        print(f"Pregunta: {q}")
-        response = await ask_ai(q)
-        results.append(f"**Pregunta:** {q}\n**Respuesta:** {response}\n")
-        print(f"Respuesta obtenida.\n")
-        
-    with open("pruebas_sistema_v1.txt", "w", encoding="utf-8") as f:
-        f.write("\n".join(results))
-    
-    print("--- PRUEBAS COMPLETADAS Y GUARDADAS EN pruebas_sistema_v1.txt ---")
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.getcwd())
 
 if __name__ == "__main__":
-    asyncio.run(run_documentation_tests())
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "tests/", "-v", "--tb=short"],
+        capture_output=False,
+    )
+    sys.exit(result.returncode)

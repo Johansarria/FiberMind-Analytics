@@ -30,4 +30,8 @@ def probe_sor(file_path):
         traceback.print_exc()
 
 if __name__ == "__main__":
-    probe_sor(r"C:\MLpractica3\TRAZAS\Centrales\Chiminangos\CABLE 1\61.sor")
+    import argparse
+    parser = argparse.ArgumentParser(description="Inspecciona estructura de un archivo .sor")
+    parser.add_argument("file_path", help="Ruta al archivo .sor")
+    args = parser.parse_args()
+    probe_sor(args.file_path)

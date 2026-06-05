@@ -63,10 +63,10 @@ class FiberMindConfig:
         """
         search_paths = [path] if path else DEFAULT_CONFIG_PATHS
 
-        for p in search_paths:
-            if not p:
+        for path in search_paths:
+            if not path:
                 continue
-            resolved = Path(p).expanduser()
+            resolved = Path(path).expanduser()
             if resolved.exists():
                 with open(resolved) as f:
                     raw = yaml.safe_load(f)

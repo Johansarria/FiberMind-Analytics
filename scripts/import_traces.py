@@ -1,34 +1,41 @@
 import os
 import sqlite3
 import sys
+import argparse
+
 from pyotdr.read import sorparse
 
 # Configuración
 DB_PATH = "ftth_mantenimiento.db"
-TRAZAS_DIR = r"C:\MLpractica3\TRAZAS\Centrales\Chiminangos\CABLE 1"
-ID_CABLE = 1  # Basado en la carpeta "CABLE 1"
 
-def import_traces():
+
+def import_traces(trazas_dir: str, id_cable: int):
+    """Importa trazas OTDR desde archivos .sor a la base de datos.
+
+    Args:
+        trazas_dir: Directorio con archivos .sor.
+        id_cable: Número de cable asociado a las trazas.
+    """
     # Forzar salida en UTF-8
     if sys.stdout.encoding != 'utf-8':
         sys.stdout.reconfigure(encoding='utf-8')
 
-    if not os.path.exists(TRAZAS_DIR):
-        print(f"Error: Directorio no encontrado {TRAZAS_DIR}")
+    if not os.path.exists(trazas_dir):
+        print(f"Error: Directorio no encontrado {trazas_dir}")
         return
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     # Opcional: Limpiar datos previos de este cable para evitar duplicados
-    cursor.execute("DELETE FROM eventos_otdr WHERE id_cable = ?", (ID_CABLE,))
+    cursor.execute("DELETE FROM eventos_otdr WHERE id_cable = ?", (id_cable,))
     
-    files = [f for f in os.listdir(TRAZAS_DIR) if f.endswith('.sor')]
-    print(f"Encontrados {len(files)} archivos .sor en {TRAZAS_DIR}")
+    files = [f for f in os.listdir(trazas_dir) if f.endswith('.sor')]
+    print(f"Encontrados {len(files)} archivos .sor en {trazas_dir}")
 
     imported_count = 0
     for filename in files:
-        file_path = os.path.join(TRAZAS_DIR, filename)
+        file_path = os.path.join(trazas_dir, filename)
         
         # Extraer ID de hilo del nombre del archivo (ej: "61.sor" -> 61)
         # Algunos archivos pueden tener espacios o texto extra (ej: "135 corregir.sor")
@@ -76,4 +83,8 @@ def import_traces():
     print(f"Importación completada. Se procesaron {imported_count} hilos de fibra.")
 
 if __name__ == "__main__":
-    import_traces()
+    parser = argparse.ArgumentParser(description="Importa trazas OTDR a la base de datos.")
+    parser.add_argument("trazas_dir", help="Directorio con archivos .sor")
+    parser.add_argument("--cable", type=int, default=1, help="Número de cable (default: 1)")
+    args = parser.parse_args()
+    import_traces(args.trazas_dir, args.cable)

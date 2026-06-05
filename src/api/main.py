@@ -3,11 +3,14 @@
 # FastAPI con soporte multi-cliente via X-ISP-ID
 # ─────────────────────────────────────────────
 
+import logging
 import os
 import sys
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Query, Header
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -16,6 +19,8 @@ from src.config.isp_config import get_config, reload_config
 from src.utils.plotting import generate_plot
 
 # ─── Inicialización ───
+logger = logging.getLogger(__name__)
+
 config = get_config(os.getenv("FIBERMIND_CONFIG"))
 
 app = FastAPI(
@@ -26,6 +31,15 @@ app = FastAPI(
     version="0.3.0",
     contact={"name": "Johan Sarria", "email": "johansarria59@gmail.com"},
     license_info={"name": "MIT"},
+)
+
+# ─── CORS (permitir acceso multiplataforma) ───
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -51,17 +65,6 @@ class QueryBody(BaseModel):
 
 # ─── Endpoints ───
 
-@app.get("/", tags=["Info"])
-def root():
-    return {
-        "name": "FiberMind Analytics",
-        "version": "0.3.0",
-        "docs": "/docs",
-        "status": "/health",
-        "isps": "/isps",
-    }
-
-
 @app.get("/health", tags=["Info"])
 def health(x_isp_id: Optional[str] = Header(None)):
     """Health check para un ISP específico."""
@@ -71,7 +74,8 @@ def health(x_isp_id: Optional[str] = Header(None)):
         results, _ = repo.execute_custom_query("SELECT COUNT(*) as total FROM eventos_otdr")
         total = results[0]['total']
         db_ok = True
-    except Exception:
+    except Exception as exc:
+        logger.warning("Health check falló para ISP %s: %s", x_isp_id or 'default', exc)
         total = 0
         db_ok = False
         isp = resolve_isp(x_isp_id)
@@ -118,8 +122,8 @@ def get_trace(id_cable: int, id_hilo: int, x_isp_id: Optional[str] = Header(None
             "id_hilo": id_hilo,
             "total_eventos": len(eventos),
             "eventos": [
-                {"distancia_km": e.distancia_km, "tipo_evento": e.tipo_evento, "atenuacion_db": e.atenuacion_db}
-                for e in eventos
+                {"distancia_km": ev.distancia_km, "tipo_evento": ev.tipo_evento, "atenuacion_db": ev.atenuacion_db}
+                for ev in eventos
             ],
         }
     except HTTPException:
@@ -238,10 +242,26 @@ def get_stats(x_isp_id: Optional[str] = Header(None)):
         return {
             "isp": isp.id,
             "isp_name": isp.name,
-            "total_eventos": sum(t['count'] for t in tipos),
+            "total_eventos": sum(tipo['count'] for tipo in tipos),
             "por_tipo": tipos,
             "hilos_por_cable": hilos,
             "eventos_criticos": criticos[0]['total'] if criticos else 0,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Dashboard HTML estático ───
+DASHBOARD_DIR = os.path.join(os.path.dirname(__file__), "..", "dashboard-html")
+
+if os.path.isdir(DASHBOARD_DIR):
+    app.mount("/app", StaticFiles(directory=DASHBOARD_DIR, html=True), name="dashboard")
+
+    @app.get("/")
+    async def root():
+        """Redirige al dashboard."""
+        return FileResponse(os.path.join(DASHBOARD_DIR, "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        return {"status": "FiberMind API", "version": "0.3.0", "dashboard": "Not installed"}

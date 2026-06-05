@@ -25,14 +25,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 
-# === Stage 2: Full (API + Dashboard) ===
+# === Stage 2: Full (API + Dashboard HTML) ===
 FROM base AS full
 
-# Web deps (FastAPI + Streamlit)
+# Web deps (FastAPI)
 RUN pip install --no-cache-dir \
     "fastapi>=0.115.0" \
     "uvicorn[standard]>=0.32.0" \
-    "streamlit>=1.40.0" \
     "pydantic>=2.0.0" \
     "python-multipart>=0.0.18"
 
@@ -45,7 +44,7 @@ RUN pip install -e .
 # Directorio de datos multi-ISP
 RUN mkdir -p /data
 
-EXPOSE 8000 8501
+EXPOSE 8000
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
@@ -54,7 +53,8 @@ FROM base AS production
 
 COPY src/ ./src/
 COPY scripts/ ./scripts/
-COPY fibermind.yml ./ 2>/dev/null || true
+
+# fibermind.yml es opcional — la app usa defaults si no existe
 
 # Metadata del paquete
 COPY pyproject.toml .

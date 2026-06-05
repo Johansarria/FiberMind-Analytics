@@ -59,7 +59,7 @@ class FTTHRepository:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT nombre_elemento as nombre_element, plano, x, y FROM inventario_geografico WHERE nombre_elemento LIKE ?", 
+                "SELECT nombre_elemento, plano, x, y FROM inventario_geografico WHERE nombre_elemento LIKE ?",
                 (f"%{name}%",)
             )
             row = cursor.fetchone()
@@ -68,7 +68,13 @@ class FTTHRepository:
             return None
 
     def execute_custom_query(self, sql: str) -> Tuple[List[dict], List[str]]:
-        """Ejecuta una consulta SQL personalizada (usada por el motor de IA)."""
+        """Ejecuta una consulta SQL personalizada (usada por el motor de IA).
+
+        ⚠️ ADVERTENCIA: Este método acepta SQL arbitrario generado por el
+        motor Text-to-SQL. NO debe invocarse con entrada directa del usuario
+        sin sanitizar. El llamado debe validar que el SQL solo ejecute
+        consultas SELECT de solo lectura antes de llamar este método.
+        """
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(sql)

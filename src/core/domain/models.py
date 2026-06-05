@@ -14,10 +14,10 @@ class OTDREvent:
 @dataclass(frozen=True)
 class InventoryElement:
     """Representa un elemento físico en el plano (Mufa, CTO, etc)."""
-    nombre_element: str
     plano: str
     x: float
     y: float
+    nombre_elemento: str = ""
     id: Optional[int] = None
 
 @dataclass(frozen=True)

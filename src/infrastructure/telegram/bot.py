@@ -11,6 +11,7 @@ from src.infrastructure.database.repository import FTTHRepository
 from src.infrastructure.ai.ollama_client import OllamaClient
 from src.core.services.network_service import NetworkService
 from src.core.services.ai_service import AIService
+from src.config.isp_config import get_config
 from src.utils.plotting import generate_plot
 
 # Cargar variables de entorno

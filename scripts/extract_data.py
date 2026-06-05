@@ -41,7 +41,11 @@ def deep_scan_dwg_nomenclature(file_path):
         return [f"Error de lectura: {e}"]
 
 if __name__ == "__main__":
-    plano_path = r"c:\MLpractica3\PLANOS\OT-00266858-CO2_PLANO DE RED_CL PRADOS ORIENTE_CA08_SCL16.dwg"
+    # Uso: python scripts/extract_data.py <ruta_al_plano.dwg>
+    if len(sys.argv) < 2:
+        print("Uso: python scripts/extract_data.py <ruta_al_plano.dwg>")
+        sys.exit(1)
+    plano_path = sys.argv[1]
     elementos = deep_scan_dwg_nomenclature(plano_path)
     
     if elementos:

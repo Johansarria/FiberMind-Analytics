@@ -1,56 +1,37 @@
 # FiberMind Analytics 🔬📡
 
-Plataforma de analítica e inteligencia artificial para inspección y mantenimiento de infraestructura **FTTH** (Fiber To The Home). Decodifica trazas OTDR, detecta fallas críticas automáticamente y permite consultas en lenguaje natural vía IA local.
+**Plataforma de inteligencia de red FTTH — Decodifica, visualiza y audita tu infraestructura óptica.**
+
+FiberMind transforma trazas OTDR en un dashboard NOC profesional con detección automática de fallas críticas, consultas multi-ISP y visualización en tiempo real. Diseñado para ISPs que quieren pasar de hojas de cálculo y archivos `.sor` sueltos a una plataforma centralizada.
 
 ---
 
-## 🎯 Para quién es
+## ✨ Panorama General
 
-- **ISPs y operadores FTTH** que quieren automatizar el análisis de trazas OTDR
-- **Técnicos en campo** que necesitan diagnósticos rápidos desde su celular
-- **NOCs** que requieren integración REST con dashboards existentes
-
----
-
-## ✨ Capacidades
-
-| Característica | Descripción |
+| Área | Descripción |
 |:--|:--|
-| 📡 **Decodificación OTDR** | Analiza archivos .sor y extrae eventos ópticos |
-| ⚠️ **Detección de Fallas** | Identifica empalmes, curvaturas y splits con pérdida crítica |
-| 📊 **Visualización** | Trazas estimadas de potencia óptica con umbrales |
-| 🤖 **IA Local (Text-to-SQL)** | Consulta la red en lenguaje natural vía Ollama (privacidad total) |
-| 🗺️ **Inventario Geográfico** | Localiza empalmes, CTOs y mufas en planos |
-| 🤖 **Bot de Telegram** | Técnicos consultan desde el celular |
-| 🔌 **API REST** | Integración con cualquier dashboard o NOC |
-| 🔌 **Servidor MCP** | Integración con asistentes IA (Claude, Cursor, etc.) |
-| 🐳 **Docker** | Despliegue en 1 comando |
+| 🎯 **Para quién** | ISPs FTTH, NOCs, técnicos en campo |
+| 📡 **Qué hace** | Decodifica trazas OTDR, detecta fallas, audita empalmes críticos |
+| 📊 **Dashboard** | SPA moderna modo claro, estilo NOC profesional (HTML/CSS/JS puro) |
+| 🤖 **IA local** | Consultas en lenguaje natural vía Ollama (privacidad total) |
+| 🔌 **API REST** | Integración con cualquier sistema existente |
+| 🐳 **Despliegue** | Docker compose en 1 comando |
 
 ---
 
-## 📂 Estructura
+## 🖥️ Dashboard SPA
 
-```
-fibermind-analytics/
-├── src/
-│   ├── core/domain/          # Modelos de dominio (OTDREvent, InventoryElement)
-│   │   services/             # Lógica de negocio (AI, Network)
-│   ├── infrastructure/
-│   │   ├── database/         # Repositorio SQLite
-│   │   ├── ai/               # Cliente Ollama
-│   │   ├── telegram/         # Bot de Telegram
-│   │   └── mcp/              # Servidor MCP
-│   ├── api/                  # API REST (FastAPI)
-│   ├── dashboard/            # Dashboard web (Streamlit)
-│   ├── config/               # Prompts y configuración
-│   └── utils/                # Plotting y utilidades
-├── scripts/                  # ETL, setup, diagnóstico
-├── tests/                    # Pruebas unitarias
-├── pyproject.toml            # Paquete Python
-├── Dockerfile                # Imagen Docker
-├── docker-compose.yml        # Stack completo
-└── AGENTES.md                # Guía para asistentes IA
-```
+El nuevo dashboard es una **Single Page Application** hecha en HTML/CSS/JS puro:
+
+- **Paleta clara profesional** — Fondo lavanda (#FDF8FE), sidebar lavanda (#DCD4F2), acentos azul-lavanda
+- **5 tarjetas KPI** — Eventos OTDR, críticos, tipos detectados, cables, hilos monitoreados
+- **Gráficos Plotly.js** — Donut de tipos de evento, barras de hilos por cable
+- **Tabla de eventos** — Últimos eventos con badges de severidad
+- **5 vistas** — Panel Principal, Consulta de Hilos, Auditoría, Infraestructura, Acerca de
+- **Responsive** — Funciona en tablets y laptops
+- **Servido por FastAPI** — Sin servidor web adicional, sin dependencias Node.js
+
+![Dashboard](https://via.placeholder.com/800x400/FDF8FE/DCD4F2?text=FiberMind+Dashboard)
 
 ---
 
@@ -59,52 +40,34 @@ fibermind-analytics/
 ### Opción 1: Docker (Recomendado)
 
 ```bash
-# Clonar
 git clone https://github.com/Johansarria/FiberMind-Analytics.git
 cd FiberMind-Analytics
-
-# Copiar configuración
 cp .env.example .env
-# Edita TELEGRAM_BOT_TOKEN si quieres el bot
+# Edita las variables de conexión a base de datos y Telegram
 
-# Iniciar todo el stack
 docker compose --profile all up -d
 ```
 
-Servicios:
-| Puerto | Servicio | URL |
-|:--|:--|:--|
-| 8000 | API REST | http://localhost:8000/docs |
-| 8501 | Dashboard | http://localhost:8501 |
-| 11435 | Ollama | http://localhost:11435 |
-| 5432 | PostgreSQL | localhost:5432 |
+| Puerto | Servicio |
+|:--|:--|
+| `8000` | API REST + Dashboard web |
+| `11435` | Ollama (modelos IA local) |
+| `5432` | PostgreSQL |
 
-### Opción 2: Local (Desarrollo)
+### Opción 2: Desarrollo local
 
 ```bash
-# Instalar
 python3 -m venv venv && source venv/bin/activate
-pip install -e .
-pip install -e ".[web,dashboard]"
+pip install -e ".[web]"
 
-# Configurar
 cp .env.example .env
-
-# Iniciar base de datos
 python scripts/setup_db.py
 
-# API REST
+# API + Dashboard
 uvicorn src.api.main:app --reload --port 8000
-
-# Dashboard
-streamlit run src/dashboard/app.py
-
-# Bot de Telegram (requiere token)
-python -m src.infrastructure.telegram.bot
-
-# Servidor MCP
-python -m src.infrastructure.mcp.server
 ```
+
+Abrir en navegador: **http://localhost:8000**
 
 ---
 
@@ -112,49 +75,71 @@ python -m src.infrastructure.mcp.server
 
 | Método | Endpoint | Descripción |
 |:--|:--|:--|
-| GET | `/health` | Health check |
-| GET | `/traces/{id_cable}/{id_hilo}` | Eventos OTDR de un hilo |
-| GET | `/traces/{id_cable}/{id_hilo}/plot` | Gráfico de traza OTDR |
-| POST | `/audit` | Auditoría de empalmes críticos |
-| GET | `/infrastructure` | Listar infraestructura |
-| GET | `/infrastructure/search?q=` | Buscar elemento geográfico |
-| POST | `/query` | Consulta en lenguaje natural (requiere Ollama) |
-| GET | `/stats` | Estadísticas de la red |
+| `GET` | `/health` | Health check del sistema |
+| `GET` | `/isps` | Listar ISPs configurados |
+| `GET` | `/stats` | Estadísticas de la red activa |
+| `GET` | `/traces/{cable}/{hilo}` | Eventos OTDR de un hilo |
+| `GET` | `/traces/{cable}/{hilo}/plot` | Gráfico de traza OTDR |
+| `POST` | `/audit` | Auditoría de empalmes críticos |
+| `POST` | `/query` | Consulta en lenguaje natural |
+| `GET` | `/infrastructure` | Inventario geográfico |
+| `GET` | `/infrastructure/search?q=` | Búsqueda de infraestructura |
 
-Documentación interactiva: http://localhost:8000/docs
+Documentación interactiva: **http://localhost:8000/docs**
+
+---
+
+## 🏗️ Stack Tecnológico
+
+```
+Frontend     HTML5 · CSS3 · JavaScript (ES Modules) · Plotly.js
+Backend      Python 3.13+ · FastAPI · Pydantic v2
+Base de datos SQLite (desarrollo) / PostgreSQL (producción)
+IA Local     Ollama · qwen2.5-coder:1.5b
+Bot          python-telegram-bot (opcional)
+Despliegue   Docker · Docker Compose
+```
 
 ---
 
 ## 🤖 Bot de Telegram
 
-```
-/start        → Info y bienvenida
+```text
+/start        → Información del sistema
 /auditar      → Auditoría de empalmes críticos
-/hilo <c> <h> → Radiografía de un hilo específico
-```
-
-Configura en `.env`:
-```
-TELEGRAM_BOT_TOKEN=tu_token
-TELEGRAM_AUTHORIZED_CHAT_ID=tu_chat_id
+/hilo <c> <h> → Radiografía de un hilo
 ```
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 📁 Estructura del proyecto
 
-- **Python 3.12+** · FastAPI · Streamlit · Pydantic
-- **SQLite** (dev) / **PostgreSQL** (prod)
-- **Ollama** (qwen2.5-coder:1.5b) · **MCP Protocol**
-- **python-telegram-bot** · **matplotlib**
-- **Docker** · **Docker Compose**
+```
+├── src/
+│   ├── api/                  # API REST FastAPI
+│   ├── core/
+│   │   ├── domain/           # Modelos (OTDREvent, Cable, Hilo)
+│   │   └── services/         # Lógica de negocio (AI, Network)
+│   ├── infrastructure/
+│   │   ├── database/         # Repositorio SQLite/PostgreSQL
+│   │   ├── ai/               # Cliente Ollama
+│   │   ├── telegram/         # Bot de Telegram
+│   │   └── mcp/              # Servidor MCP (protocolo IA)
+│   ├── dashboard-html/       # Dashboard SPA (HTML/CSS/JS)
+│   ├── config/               # Prompts y configuración multi-ISP
+│   └── utils/                # Plotting y utilidades
+├── scripts/                  # ETL, setup, diagnóstico
+├── tests/                    # Pruebas unitarias
+├── docs/                     # Documentación
+├── Dockerfile                # Imagen Docker
+├── docker-compose.yml        # Stack completo
+└── pyproject.toml            # Paquete Python
+```
 
 ---
 
 ## 📄 Licencia
 
 MIT © 2026 Johan Sarria
-
----
 
 > 🔬 *De técnicos para técnicos — análisis FTTH con privacidad e inteligencia local.*

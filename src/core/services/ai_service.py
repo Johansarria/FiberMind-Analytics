@@ -12,7 +12,7 @@ class AIService:
     def is_greeting(self, text: str) -> bool:
         text = text.lower().strip()
         greetings = ["hola", "buenos dias", "buenas", "hey", "hola bot", "saludos", "que tal", "quien eres"]
-        return any(g in text for g in greetings) and len(text) < 15
+        return any(greeting in text for greeting in greetings) and len(text) < 15
 
     async def process_question(self, question: str) -> str:
         """Procesa una pregunta del usuario y devuelve una respuesta técnica."""

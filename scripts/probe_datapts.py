@@ -21,4 +21,8 @@ def probe_datapts(file_path):
         print("Tracedata keys:", tracedata.keys())
 
 if __name__ == "__main__":
-    probe_datapts(r"C:\MLpractica3\TRAZAS\Centrales\Chiminangos\CABLE 1\144.sor")
+    import argparse
+    parser = argparse.ArgumentParser(description="Inspecciona DataPoints de un archivo .sor")
+    parser.add_argument("file_path", help="Ruta al archivo .sor")
+    args = parser.parse_args()
+    probe_datapts(args.file_path)

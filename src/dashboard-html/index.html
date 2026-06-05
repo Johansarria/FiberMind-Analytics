@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FiberMind — Network Intelligence</title>
+  <meta name="description" content="FiberMind Analytics — Plataforma de inteligencia de red FTTH multi-ISP">
+  <meta name="color-scheme" content="light">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/css/style.css">
+  <!-- Plotly.js global — usado por charts.js via window.Plotly -->
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ─── Sidebar ─── -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="sidebar-logo">◈</span>
+        <h1>FiberMind</h1>
+        <div class="subtitle">Network Intelligence</div>
+      </div>
+
+      <div class="isp-status">
+        <span id="isp-dot" class="isp-status-dot offline"></span>
+        <div class="isp-status-info">
+          <div id="isp-name" class="isp-status-name">Conectando...</div>
+          <div id="isp-meta" class="isp-status-meta">—</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-view="panel">
+          <span class="nav-icon">●</span>
+          Panel Principal
+        </div>
+        <div class="nav-item" data-view="consulta">
+          <span class="nav-icon">○</span>
+          Consulta de Hilos
+        </div>
+        <div class="nav-item" data-view="auditoria">
+          <span class="nav-icon">◆</span>
+          Auditoría
+        </div>
+        <div class="nav-item" data-view="infraestructura">
+          <span class="nav-icon">◇</span>
+          Infraestructura
+        </div>
+        <div class="nav-item" data-view="acerca">
+          <span class="nav-icon">△</span>
+          Acerca de
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="version">FiberMind v0.3.0</div>
+      </div>
+    </aside>
+
+    <!-- ─── Main ─── -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="page-title-area">
+          <h2 id="page-title">Panel Principal</h2>
+          <div id="page-description" class="page-description">Resumen general de la red FTTH</div>
+        </div>
+        <div class="header-right">
+          <span id="header-dot" class="header-dot offline"></span>
+          <span id="header-status-text">Conectando...</span>
+          <span style="color:var(--border);">|</span>
+          <span id="header-time" class="header-time">—</span>
+        </div>
+      </header>
+
+      <!-- El router inyecta el contenido de cada vista aquí -->
+      <div id="main-content" class="page-container">
+        <div class="loading-overlay">
+          <div class="loading-spinner"></div>
+          <span>Cargando aplicación...</span>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Módulo principal ES — importa vistas bajo demanda -->
+  <script type="module" src="/app/js/app.js"></script>
+</body>
+</html>
